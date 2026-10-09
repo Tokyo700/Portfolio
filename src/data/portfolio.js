@@ -185,9 +185,9 @@ export const faq = {
 export const contact = {
   heading: ['Let’s Build Something', 'Secure Together'],
   sub: 'Open to internships, research collaborations and interesting security problems. Drop a message and I’ll get back to you.',
-  // Optional: paste a Formspree / Web3Forms / Getform endpoint here to receive
-  // messages directly. When empty, the form opens the visitor's email app.
-  formEndpoint: '',
+  // Backend that emails submissions to you (server/contact.js, configured via .env).
+  // Set to '' to fall back to opening the visitor's email app instead.
+  formEndpoint: '/api/contact',
 }
 
 export const footer = {

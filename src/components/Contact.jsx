@@ -38,6 +38,7 @@ const field =
 export default function Contact() {
   const sectionRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle | sending | sent | mailto | error
+  const [errorText, setErrorText] = useState('')
   const reduced = useReducedMotion()
 
   useGSAP(() => {
@@ -63,16 +64,19 @@ export default function Contact() {
 
     if (contact.formEndpoint) {
       setStatus('sending')
+      setErrorText('')
       try {
         const res = await fetch(contact.formEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(data),
         })
-        if (!res.ok) throw new Error(res.statusText)
+        const result = await res.json().catch(() => ({}))
+        if (!res.ok || result.ok === false) throw new Error(result.error || res.statusText)
         form.reset()
         setStatus('sent')
-      } catch {
+      } catch (err) {
+        setErrorText(err.message)
         setStatus('error')
       }
       return
@@ -88,7 +92,7 @@ export default function Contact() {
     sending: 'Sending…',
     sent: 'Thanks! Your message is on its way — I’ll reply soon.',
     mailto: 'Your email app should open with the message ready to send.',
-    error: `Something went wrong. Please email me directly at ${profile.email}.`,
+    error: `${errorText || 'Something went wrong.'} (${profile.email})`,
   }[status]
 
   return (
@@ -149,12 +153,15 @@ export default function Contact() {
             <span className="text-[1vw] text-white/45 max-[1025px]:text-[2vw] max-md:text-[3.4vw]">Drop me a message</span>
           </div>
           <div className="grid grid-cols-2 gap-[1.2vw] max-md:grid-cols-1 max-[1025px]:gap-4">
-            <input name="name" required placeholder="Your Name*" autoComplete="name" className={`${field} rounded-full`} />
-            <input name="email" type="email" required placeholder="Email Address*" autoComplete="email" className={`${field} rounded-full`} />
+            <input name="name" required maxLength={100} placeholder="Your Name*" autoComplete="name" className={`${field} rounded-full`} />
+            <input name="email" type="email" required maxLength={254} placeholder="Email Address*" autoComplete="email" className={`${field} rounded-full`} />
           </div>
-          <input name="subject" required placeholder="Subject*" className={`${field} rounded-full`} />
+          <input name="subject" required maxLength={150} placeholder="Subject*" className={`${field} rounded-full`} />
+          {/* honeypot — hidden from people, tempting for spam bots */}
+          <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] w-px h-px opacity-0" />
           <textarea
             name="message"
+            maxLength={5000}
             required
             rows={5}
             placeholder="Your Message*"
